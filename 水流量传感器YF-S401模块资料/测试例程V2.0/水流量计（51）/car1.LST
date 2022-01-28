@@ -1,0 +1,198 @@
+C51 COMPILER V9.59.0.0   CAR1                                                              07/03/2020 16:11:26 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE CAR1
+OBJECT MODULE PLACED IN car1.OBJ
+COMPILER INVOKED BY: D:\Program Files (x86)\Keil\C51\BIN\C51.EXE car1.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND TABS
+                    -(2)
+
+line level    source
+
+   1          #include <reg52.h>               //包含头文件
+   2          #include <lcd.h>
+   3          #include <intrins.h>
+   4          
+   5          
+   6          #define uint unsigned int                  //宏常量定义
+   7          #define uchar unsigned char                //宏常量定义
+   8          
+   9          
+  10          
+  11             
+  12          
+  13          
+  14          
+  15          
+  16          float  SpeedCount=0;                    //测速计数脉冲
+  17          float  Speed = 0.0;                     //瞬时速度            
+  18          float  flow = 0.0;                  //流量                      
+  19          uint time_count;
+  20          
+  21          
+  22          void interrupt_init();             //声明中断初始化函数
+  23          void ComputeSpeedANDDistance();    //声明速度距离计算函数
+  24          
+  25          void DelayUs(unsigned int time);   //延时子函数
+  26          void Delay(unsigned int time);     //延时主程序
+  27          void DisplayFlow(void);
+  28          /*————————————————主函数———————————————————*/
+  29          void main()    
+  30          { 
+  31   1      
+  32   1        interrupt_init();                       //中断初始化
+  33   1        LCDInit();                              //显示屏初始化
+  34   1        DisplayString(0x0,0,"1sensor.taobao");
+  35   1        DisplayString(0x0,1,"          .com");
+  36   1        Delay(300);
+  37   1        WriteCmd(LCD_CLS);                      //清屏 
+  38   1      
+  39   1      
+  40   1        WriteCmd(LCD_CLS);
+  41   1        DisplayString(0x0,0,"Flow:");  
+  42   1      
+  43   1        DisplayString(0x0C,0,"L");    
+  44   1        
+  45   1        while(1)
+  46   1        {
+  47   2          if(time_count == 0)
+  48   2          {
+  49   3            ComputeSpeedANDDistance();
+  50   3            DisplayFlow();      
+  51   3          }
+  52   2      
+  53   2        }
+  54   1      }
+C51 COMPILER V9.59.0.0   CAR1                                                              07/03/2020 16:11:26 PAGE 2   
+
+  55          
+  56          
+  57          
+  58          
+  59          
+  60          /*————————————————速度、流量计算函数———————————————————*/
+  61          void ComputeSpeedANDDistance(void)
+  62          {
+  63   1        Speed=SpeedCount/5.5/60;          //计算1秒流量
+  64   1        flow+=Speed;                          //计算距离            
+  65   1        SpeedCount=0;
+  66   1      }
+  67          //void ComputeSpeedANDDistance(void)
+  68          //{
+  69          //  flow+=SpeedCount;                         //计算距离            
+  70          //  SpeedCount=0;
+  71          //}
+  72          /*-------------------------------------  显示流量 ----------------------------------------*/
+  73          //函数功能：    显示路程
+  74          //函数入口参数：无
+  75          //函数返回值：  无
+  76          void DisplayFlow(void)
+  77          {
+  78   1        uchar a1,a2,a3,a4,a5,a6;
+  79   1        a1 = (int)(flow*100)/100000+'0';
+  80   1        a2 = (int)(flow*100)%100000/10000+'0';  
+  81   1        a3 = (int)(flow*100)%10000/1000+'0';
+  82   1        a4 = (int)(flow*100)%1000/100+'0';
+  83   1        a5 = (int)(flow*100)%100/10+'0';
+  84   1        a6 = (int)(flow*100)%10+'0';  
+  85   1      
+  86   1      //  a1 = (int)(flow)/100000+'0';
+  87   1      //  a2 = (int)(flow)%100000/10000+'0';  
+  88   1      //  a3 = (int)(flow)%10000/1000+'0';
+  89   1      //  a4 = (int)(flow)%1000/100+'0';
+  90   1      //  a5 = (int)(flow)%100/10+'0';
+  91   1      //  a6 = (int)(flow)%10+'0';  
+  92   1        
+  93   1        DisplaySingleChar(0x05,0,a1)  ;
+  94   1        DisplaySingleChar(0x06,0,a2)  ; 
+  95   1        DisplaySingleChar(0x07,0,a3)  ; 
+  96   1        DisplaySingleChar(0x08,0,a4)  ; 
+  97   1        DisplaySingleChar(0x09,0,'.') ;   
+  98   1        DisplaySingleChar(0x0a,0,a5)  ; 
+  99   1        DisplaySingleChar(0x0b,0,a6)  ;
+ 100   1        
+ 101   1      }
+ 102          
+ 103          /*————————————————延时函数———————————————————*/
+ 104          //函数功能：    延时
+ 105          //函数入口参数：字符型x，储存延时时间的长短
+ 106          //函数返回值：  无
+ 107          void Delay(unsigned int time)
+ 108          {
+ 109   1          unsigned int timeCounter = 0;
+ 110   1        for (timeCounter = time;timeCounter > 0 ;timeCounter --)
+ 111   1          DelayUs(255);
+ 112   1      }
+ 113          
+ 114          void DelayUs(unsigned int time)
+ 115          {
+ 116   1        unsigned int timeCounter = 0;
+C51 COMPILER V9.59.0.0   CAR1                                                              07/03/2020 16:11:26 PAGE 3   
+
+ 117   1        for (timeCounter = 0;timeCounter < time;timeCounter ++)
+ 118   1          _nop_();
+ 119   1      }
+ 120          
+ 121          /*————————————————中断初始化———————————————————*/
+ 122           void interrupt_init()
+ 123          {
+ 124   1        EA=1;                   //开总中断
+ 125   1        EX0=1;                  //开外部中断0
+ 126   1        IT0=1;                  //INTO边沿触发
+ 127   1        PX0=1;                  //INTO优先级为高级
+ 128   1        EX1=1;                  //开INT1中断
+ 129   1        IT1=1;                  //INT1边沿触发
+ 130   1        PX1=1;                  //INT1优先级为高级
+ 131   1        
+ 132   1        TMOD=0x11;              //T0/T1定时方式1
+ 133   1        ET0=0x00;               //关T0中断
+ 134   1        ET1=0x01;               //开T1中断
+ 135   1      
+ 136   1        TR0=0x00;
+ 137   1        TR1=0x01;                               //启动T1
+ 138   1        TH1=0x4C;                               //定时初值-50ms中断一次
+ 139   1        TL1=0x00; 
+ 140   1      }
+ 141          
+ 142          
+ 143          /*————————————————外部中断1———————————————————*/
+ 144          //函数功能：    外部中断1，记录车轮转过的圈数
+ 145          //函数入口参数：无
+ 146          //函数返回值：  无
+ 147          void ext1() interrupt 2     
+ 148          {
+ 149   1         SpeedCount++;
+ 150   1      }
+ 151          
+ 152          /*————————————————定时器中断1———————————————————*/
+ 153          //函数功能：    定时器中断1，用来记录时间
+ 154          //函数入口参数：无
+ 155          //函数返回值：  无
+ 156          void Time1() interrupt 3      
+ 157          {
+ 158   1        TR1=1;
+ 159   1        TH1 = 0x04C;
+ 160   1        TL1 = 0x00;
+ 161   1        time_count++;
+ 162   1        if (time_count == 20)
+ 163   1        {
+ 164   2         time_count = 0;
+ 165   2        } 
+ 166   1      }
+ 167          
+ 168          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    881    ----
+   CONSTANT SIZE    =     38    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     14      17
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+C51 COMPILER V9.59.0.0   CAR1                                                              07/03/2020 16:11:26 PAGE 4   
+
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
